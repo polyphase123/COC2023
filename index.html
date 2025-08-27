@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERC Certificate of Compliance (COC) Checklist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .checked .item-text {
+            text-decoration: line-through;
+            color: #a1a1aa; /* Zinc 400 */
+        }
+        .progress-bar-fill { transition: width 0.4s ease-in-out; }
+        
+        .custom-checkbox input { display: none; }
+        .custom-checkbox .checkmark {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d4d4d8; /* Zinc 300 */
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .custom-checkbox input:checked + .checkmark {
+            background-color: #4f46e5; /* Indigo 600 */
+            border-color: #4f46e5;
+        }
+        .custom-checkbox input:checked + .checkmark::after {
+            content: '';
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg) translateY(-1px);
+        }
+
+        #infoModal { transition: opacity 0.3s ease; }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-button svg {
+            transition: transform 0.3s ease;
+        }
+        .accordion-button.open svg {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-zinc-100 text-zinc-800">
+
+    <div class="container mx-auto max-w-3xl p-4">
+        
+        <header class="text-center py-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500">
+                ERC COC Checklist
+            </h1>
+            <p class="text-zinc-500 mt-3 text-lg">Your guide to Certificate of Compliance applications.</p>
+        </header>
+
+        <!-- Main Tabs -->
+        <div class="mb-6 sticky top-0 bg-zinc-100 z-10 py-2">
+            <div class="flex space-x-2 bg-zinc-200 p-1 rounded-xl">
+                <button data-tab="checklist" class="tab-button flex-1 py-2.5 text-center font-semibold text-sm md:text-base bg-white text-indigo-600 rounded-lg shadow-sm">Checklist</button>
+                <button data-tab="guidelines" class="tab-button flex-1 py-2.5 text-center font-semibold text-sm md:text-base text-zinc-600">Guidelines & Info</button>
+                <button data-tab="comparison" class="tab-button flex-1 py-2.5 text-center font-semibold text-sm md:text-base text-zinc-600">PAO vs. COC</button>
+                 <button data-tab="faq" class="tab-button flex-1 py-2.5 text-center font-semibold text-sm md:text-base text-zinc-600">FAQ</button>
+            </div>
+        </div>
+
+        <!-- Checklist Tab Content -->
+        <div id="checklist-content" class="tab-content">
+            <div class="mb-8">
+                <div id="cocTypeSelector" class="flex flex-col gap-4">
+                    <!-- Selector bubbles will be injected here -->
+                </div>
+            </div>
+             <div class="mb-6">
+                <input type="text" id="searchBar" class="w-full p-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search for a requirement...">
+            </div>
+
+            <main id="checklistContainer" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200">
+                <h2 id="checklistTitle" class="text-2xl font-semibold mb-2 text-zinc-900"></h2>
+                <p id="checklistSubtitle" class="text-zinc-500 mb-6">Select an item to mark it as complete.</p>
+                
+                <div class="mb-8">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-sm font-medium text-indigo-700">Progress</span>
+                        <span id="progressText" class="text-sm font-medium text-indigo-700">0%</span>
+                    </div>
+                    <div class="w-full bg-zinc-200 rounded-full h-3">
+                        <div id="progressBar" class="bg-gradient-to-r from-purple-500 to-indigo-600 h-3 rounded-full progress-bar-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                 <div class="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <label for="targetDate" class="block text-sm font-medium text-blue-800 mb-2">Set Target Application Date:</label>
+                    <input type="date" id="targetDate" class="w-full p-2 border border-blue-300 rounded-lg">
+                    <div id="deadlineInfo" class="mt-3 text-sm text-blue-700"></div>
+                </div>
+
+
+                <div id="checklist" class="space-y-2"></div>
+                
+                <div class="mt-8 pt-6 border-t border-zinc-200 grid grid-cols-2 sm:grid-cols-4 items-center gap-4">
+                    <button id="printButton" class="w-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-3 px-4 rounded-xl transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Print
+                    </button>
+                    <button id="exportPdfButton" class="w-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-3 px-4 rounded-xl transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export PDF
+                    </button>
+                    <button id="exportCsvButton" class="w-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-3 px-4 rounded-xl transition">
+                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export CSV
+                    </button>
+                    <button id="resetButton" class="w-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 px-4 rounded-xl transition">
+                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16"></path></svg>
+                        Reset
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- Guidelines Tab Content -->
+        <div id="guidelines-content" class="tab-content hidden">
+            <main class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200 space-y-4">
+                 <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Key Definitions</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-4 text-base leading-relaxed">
+                            <p><strong>GenCo (Generation Company):</strong> Any person or entity authorized by the ERC to operate facilities used in the Generation of Electricity.</p>
+                            <p><strong>MGSP (Microgrid System Provider):</strong> A person or entity whose business includes the installation, operation, and maintenance of microgrid systems in Unserved or Underserved areas.</p>
+                            <p><strong>SGF (Self-Generation Facility):</strong> A power generation facility owned and constructed by an End-User for their own consumption or internal use. The requirements for a COC application differ for facilities below 1 MW and those 1 MW and above.</p>
+                            <p><strong>QE (Qualified End-User):</strong> Refers to entities that generate electric power from an eligible on-site RE generating facility, such as, but not limited to, a house or office building with a photovoltaic system that can be connected to the grid, for the purposes of entering into a Net-Metering agreement.</p>
+                             <p><strong>DER (Distributed Energy Resource):</strong> Power sources connected to the distribution system or electrical system of the End-Users, that could be aggregated to meet a demand.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Application Flow & Timelines</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-4 text-base leading-relaxed">
+                            <p><strong>Step 1: Pre-Filing Stage</strong><br>Submit pre-filing requirements at least <strong>30 calendar days BEFORE</strong> the start of Test & Commissioning (T&C). ERC will issue a Certification for Pre-filing upon completion.</p>
+                            <p><strong>Step 2: Post T&C Submission</strong><br>File the complete COC or PAO application requirements no later than <strong>30 calendar days FROM</strong> the last day of T&C. ERC will issue a Confirmation of Completeness and Statement of Account.</p>
+                            <p><strong>Step 3: Processing & Inspection</strong><br>After payment and docketing, the official processing time begins. ERC will conduct a technical inspection, preferably within 15 calendar days.</p>
+                            <p><strong>Step 4: Issuance of COC/PAO</strong><br>ERC will issue the COC or PAO within the prescribed processing time from the date of docketing.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Processing Times</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <ul class="pt-4 text-zinc-700 list-disc list-inside space-y-2 text-base leading-relaxed">
+                            <li><strong>Standard Applications:</strong> Within 60 calendar days</li>
+                            <li><strong>CEPNS Projects:</strong> Within 30 calendar days</li>
+                            <li><strong>Strategic Investments (EO 18):</strong> Within 20 calendar days</li>
+                        </ul>
+                    </div>
+                </div>
+                <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Key Notes</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-4 text-base leading-relaxed">
+                            <p><strong>Technical Inspection:</strong> Can be physical, virtual (under certain conditions like force majeure), or a spot inspection without prior notice.</p>
+                            <p><strong>Transfer of Ownership:</strong> The existing owner must report the transfer to ERC within 7 calendar days. The new owner must file for a COC amendment within 90 calendar days.</p>
+                             <p><strong>Application Fees:</strong><br>
+                               - GenCo/MGSP (COC/PAO): ₱10,000<br>
+                               - SGF/QE/DER (&lt;100kW): ₱1,500<br>
+                               - SGF/QE/DER (101-500kW): ₱5,000<br>
+                               - SGF/QE/DER (501-999kW): ₱7,500<br>
+                               - SGF/QE/DER (&gt;1MW): ₱10,000<br>
+                               - Amendment: ₱3,000</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Contact Information</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-3 text-base leading-relaxed">
+                            <p><strong>Telephone:</strong> (02) 8631-5806</p>
+                            <p><strong>General Licensing:</strong><br>licensing@erc.ph (loc. 5246)</p>
+                            <p><strong>Off-Grid:</strong><br>licensing-offgrid@erc.ph (loc. 5246)</p>
+                            <p><strong>SGF:</strong><br>licensing-sgf@erc.ph (loc. 5203)</p>
+                            <p><strong>QE:</strong><br>licensing-qe@erc.ph (loc. 5246)</p>
+                            <p><strong>DER:</strong><br>licensing-der@erc.ph (loc. 5203)</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- PAO vs COC Comparison Tab Content -->
+        <div id="comparison-content" class="tab-content hidden">
+            <main class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="py-4 px-6 bg-zinc-100 font-bold uppercase text-sm text-zinc-600 border-b-2 border-zinc-200">Feature</th>
+                                <th class="py-4 px-6 bg-zinc-100 font-bold uppercase text-sm text-blue-600 border-b-2 border-zinc-200">Certificate of Compliance (COC)</th>
+                                <th class="py-4 px-6 bg-zinc-100 font-bold uppercase text-sm text-orange-600 border-b-2 border-zinc-200">Provisional Authority to Operate (PAO)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="hover:bg-zinc-50">
+                                <td class="py-5 px-6 border-b border-zinc-200 font-semibold align-top">Definition</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">A license issued by the ERC in favor of a person or entity to operate a power plant or other facilities used in the generation of electricity.</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">The interim authority granted by the ERC in favor of a person(s) or entity(ies) to operate generation facilities used in the generation of electricity, pending the completion of requirements for issuance of COC.</td>
+                            </tr>
+                            <tr class="hover:bg-zinc-50">
+                                <td class="py-5 px-6 border-b border-zinc-200 font-semibold align-top">Term / Validity</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">The COC issued by the ERC shall be effective from the date of approval of the ERC as indicated in the Certificate, and shall remain valid, unless otherwise suspended, revoked or annulled by the ERC after due notice and hearing.</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">The PAO shall be issued in the form of a letter to the applicant and shall be valid for a period of one (1) year from issuance thereof. It can be extended up to 5 consecutive times.</td>
+                            </tr>
+                            <tr class="hover:bg-zinc-50">
+                                <td class="py-5 px-6 border-b border-zinc-200 font-semibold align-top">Applicability</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">Applies to all generation facilities, including GenCo, MGSP, SGF, QE, DER, and ESS.</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">Serves as an option for GenCo, MGSP, and ESS. It does not apply to SGF, QE, or DER.</td>
+                            </tr>
+                            <tr class="hover:bg-zinc-50">
+                                <td class="py-5 px-6 border-b border-zinc-200 font-semibold align-top">Requirements</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">Requires submission of all final and approved documents, permits, and certificates as specified in the 2023 Revised COC Rules.</td>
+                                <td class="py-5 px-6 border-b border-zinc-200 text-zinc-700 align-top">Allows for the submission of substitute documents, such as "Proof of Application," a "Compliance Plan," or an "Affidavit of Undertaking" in place of final, approved requirements, subject to conditions in Section 10 of the rules.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+        
+        <!-- FAQ Tab Content -->
+        <div id="faq-content" class="tab-content hidden">
+            <main class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200 space-y-4">
+                 <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>Which should I apply for, a PAO or a New COC?</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-4 text-base leading-relaxed">
+                            <p>The choice depends on the completeness of your documents and your facility type:</p>
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>Apply for a New COC if:</strong> You have all the final, approved requirements ready to submit. This is the direct path to your full, long-term license.</li>
+                                <li><strong>Apply for a PAO if:</strong> You are a GenCo or MGSP and have not yet completed all final requirements but want to begin commercial operations. The PAO is a temporary, one-year permit that allows you to operate while finalizing your COC documents.</li>
+                            </ul>
+                             <p class="font-semibold">The PAO option is NOT available for SGF, QE, or DER facilities. These must apply directly for a full COC.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>What is a Certificate of Compliance (COC)?</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="pt-4 text-zinc-700 space-y-4 text-base leading-relaxed">
+                           <p>A Certificate of Compliance (COC) is a license issued by the Energy Regulatory Commission (ERC) that authorizes a person or entity to operate a power plant or other facilities used to generate electricity in the Philippines.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>What is the processing time for an application?</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <ul class="pt-4 text-zinc-700 list-disc list-inside space-y-2 text-base leading-relaxed">
+                            <li><strong>Standard Applications:</strong> Within 60 calendar days</li>
+                            <li><strong>CEPNS Projects:</strong> Within 30 calendar days</li>
+                            <li><strong>Strategic Investments (EO 18):</strong> Within 20 calendar days</li>
+                        </ul>
+                    </div>
+                </div>
+                 <div>
+                    <button class="accordion-button w-full flex justify-between items-center text-left font-semibold text-lg p-4 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition">
+                        <span>What happens if I modify my facility after getting a COC?</span>
+                        <svg class="w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                       <p class="pt-4 text-zinc-700 text-base leading-relaxed">Any material change to your facility, such as a change in technical specifications or ownership, requires you to file for an amendment to your COC. You must report a transfer of ownership to the ERC within 7 calendar days, and the new owner must file for the amendment within 90 days.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+
+        <footer class="text-center py-8 px-4 text-zinc-500 text-sm">
+            <p>Based on the 2023 Revised Rules for the Issuance of Certificates of Compliance.</p>
+            <p>This is an MVP tool and should not replace official ERC consultation.</p>
+        </footer>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 text-left">
+            <div class="flex justify-between items-center mb-4">
+                 <h3 class="text-xl font-bold text-zinc-900">Requirement Details</h3>
+                 <button id="closeModalButtonX" class="text-zinc-400 hover:text-zinc-600 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="modalContent" class="space-y-4 text-base text-zinc-700 mb-6 bg-zinc-50 p-4 rounded-lg max-h-80 overflow-y-auto">
+                <!-- Content injected by JS -->
+            </div>
+            <button id="closeModalButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STORE for CHECKLISTS with REFERENCES ---
+        const checklists = {
+            'New Applications': {
+                gencoNewPreFiling: { title: 'GenCo/MGSP - New (Pre-Filing)', items: { 
+                    'General': [ 
+                        { text: 'Application Form (COC Form No. 1)', ref: { section: 'Section 9.1 (a) (i)', page: '22', purpose: 'To formally initiate the application process using the official ERC-prescribed document.' } }, 
+                        { text: 'Company Profile (COC Form No. 2)', ref: { section: 'Section 9.1 (a) (ii)', page: '22', purpose: 'To provide the ERC with essential information about the applicant company.' } }, 
+                        { text: 'Affidavit of Compliance (COC Form No. 3)', ref: { section: 'Section 9.1 (a) (iii)', page: '22', purpose: 'To legally affirm the applicant\'s commitment to comply with all relevant technical and market rules.' } }, 
+                        { text: 'General Plant Description (COC Form No. 4)', ref: { section: 'Section 9.1 (a) (iv)', page: '22', purpose: 'To give a technical overview of the generation facility, including key components and connection details.' } } 
+                    ], 
+                    'Technical': [ 
+                        { text: 'Electrical/Mechanical Plans and Diagrams', ref: { section: 'Section 9.1 (b) (i) (1)', page: '22', purpose: 'To allow the ERC to verify the technical soundness and design of the facility and its connection to the grid.' } }, 
+                        { text: 'Proof of application for Test and Commissioning', ref: { section: 'Section 9.1 (b) (i) (2)', page: '23', purpose: 'To show that the applicant has initiated the process of technical validation with the appropriate grid or distribution utility.' } }, 
+                        { text: 'For MGSP, Waiver Agreement with DU', ref: { section: 'Section 9.1 (b) (i) (3)', page: '23', purpose: 'To establish the operational and facility-use terms between a Microgrid Systems Provider and the incumbent Distribution Utility.' } }, 
+                        { text: 'Management and/or lease contracts (if applicable)', ref: { section: 'Section 9.1 (b) (ii)', page: '23', purpose: 'To clarify the operational responsibilities if the plant is managed by an entity other than the owner.' } }, 
+                        { text: 'Application for Authority for Dedicated Point-to-Point facilities (if applicable)', ref: { section: 'Section 9.1 (b) (iii)', page: '23', purpose: 'To ensure regulatory oversight for any dedicated transmission or distribution lines built by the applicant.' } } 
+                    ], 
+                    'Financial': [ 
+                        { text: 'Audited Financial Statements (2 most recent years)', ref: { section: 'Section 9.1 (c) (i)', page: '23', purpose: 'To demonstrate the applicant\'s financial health and capability to sustain the operation of the generation facility.' } }, 
+                        { text: 'Schedule of liabilities', ref: { section: 'Section 9.1 (c) (ii)', page: '23', purpose: 'To provide a clear picture of the applicant\'s financial obligations and credit standing.' } }, 
+                        { text: 'Five (5) year financial plan', ref: { section: 'Section 9.1 (c) (iii)', page: '24', purpose: 'To show the long-term financial viability and planning for the facility\'s operation.' } }, 
+                        { text: 'Proof of BSUP filing/approval (if applicable)', ref: { section: 'Section 9.1 (c) (iv)', page: '24', purpose: 'To ensure compliance with rules on business separation for companies with multiple business segments.' } } 
+                    ], 
+                    'Ownership/Control': [ 
+                        { text: 'SEC Certificate of Registration / Business Name Registration', ref: { section: 'Section 9.1 (d) (i)', page: '24', purpose: 'To verify the legal identity and corporate structure of the applicant.', definition: 'A document issued by the Securities and Exchange Commission (SEC) that legitimizes a company\'s existence, enabling it to operate, trade assets, and access rights under Philippine corporate laws.' } }, 
+                        { text: 'Business Permit (Principal Office)', ref: { section: 'Section 9.1 (d) (ii)', page: '24', purpose: 'To confirm that the applicant is legally permitted to conduct business at its main office.', definition: 'Also known as a Mayor’s Permit, this is a license from the Local Government Unit (LGU) that allows a business to legally conduct operations within its registered city or municipality.' } }, 
+                        { text: 'Proof of application for Business Permit (Generation Facility location)', ref: { section: 'Section 9.1 (d) (iii)', page: '24', purpose: 'To show that the applicant is in the process of securing the legal right to operate at the facility\'s location.' } }, 
+                        { text: 'Latest General Information Sheet (GIS)', ref: { section: 'Section 9.1 (d) (iv)', page: '24', purpose: 'To identify the current officers, directors, and stockholders of the applicant company.', definition: 'An annual reportorial requirement filed with the SEC to provide updated information about a corporation, including its directors, officers, stockholders, and capital structure.' } }, 
+                        { text: 'Proof of Compliance with Public Offering Requirements (for existing GenCos)', ref: { section: 'Section 9.1 (d) (v)', page: '25', purpose: 'To ensure that existing generation companies comply with the EPIRA requirement to offer shares to the public.', definition: 'Evidence showing that a power generation company has offered and sold at least fifteen percent (15%) of its common shares to the public, as mandated by the Electric Power Industry Reform Act (EPIRA).' } } 
+                    ], 
+                    'Other': [ 
+                        { text: 'DOE: Affidavit of Undertaking for Trust Accounts (ER 1-94)', ref: { section: 'Section 9.1 (e) (i) (1)', page: '25', purpose: 'To ensure the applicant commits to fulfilling their financial obligations to host communities as mandated by law.', definition: 'A sworn statement committing an energy resource developer to establish a trust fund for the benefit of the host community, as required under the Department of Energy\'s ER 1-94 program.' } }, 
+                        { text: 'DOE: Certificate of Endorsement (COE-PDP/MEDP)', ref: { section: 'Section 9.1 (e) (i) (2)', page: '25', purpose: 'To confirm that the proposed project is aligned with the national or missionary power development plan.', definition: 'A certification issued by the Department of Energy (DOE) confirming that a power project is consistent with the goals of the Philippine Power Development Plan (PDP) or Missionary Electrification Development Plan (MEDP).' } }, 
+                        { text: 'DENR: Environmental Compliance Certificate (ECC)', ref: { section: 'Section 9.1 (e) (ii) (1)', page: '25', purpose: 'To ensure the project has been assessed for its environmental impact and complies with environmental regulations.', definition: 'A document issued by the DENR-EMB certifying that a proposed project will not cause a significant negative environmental impact and that the proponent has complied with all the requirements of the Environmental Impact Statement (EIS) System.' } }, 
+                        { text: 'DENR: Proof of application for Permit to Operate (PTO)', ref: { section: 'Section 9.1 (e) (ii) (2)', page: '25', purpose: 'To show that the applicant has started the process to get a permit for operating pollution-source equipment.', definition: 'A permit from the DENR-EMB that allows a business to operate specific sources of air pollution, ensuring compliance with the Philippine Clean Air Act.' } }, 
+                        { text: 'DENR: Proof of application for Wastewater Discharge Permit (WDP)', ref: { section: 'Section 9.1 (e) (ii) (3)', page: '25', purpose: 'To show compliance with regulations regarding the discharge of wastewater.', definition: 'A permit from the DENR-EMB authorizing an establishment to discharge wastewater into a water body, ensuring compliance with the Philippine Clean Water Act.' } }, 
+                        { text: 'NWRB: Water Permit (WP) or Conditional Water Permit (CWP)', ref: { section: 'Section 9.1 (e) (iii)', page: '26', purpose: 'To ensure the applicant has the legal right to appropriate and use water resources for power generation.', definition: 'A document issued by the National Water Resources Board (NWRB) granting a person or entity the privilege to appropriate and use water.' } }, 
+                        { text: 'Fuel Supply Agreements (FSA) or Fuel Sustainability Plan', ref: { section: 'Section 9.1 (e) (iv)', page: '26', purpose: 'To demonstrate a stable and long-term fuel source for the reliable operation of the power plant.', definition: 'A contract between a power plant operator and a fuel supplier that guarantees a reliable and long-term source of fuel (such as coal, natural gas, or biomass) for electricity generation.' } }, 
+                        { text: 'NCIP: Certification Precondition (if applicable)', ref: { section: 'Section 9.1 (e) (v)', page: '26', purpose: 'To ensure that the rights of Indigenous Cultural Communities/Indigenous Peoples are protected if the project is within an Ancestral Domain.', definition: 'A certification from the National Commission on Indigenous Peoples (NCIP) ensuring that a project area does not overlap with an ancestral domain, or that the Free and Prior Informed Consent (FPIC) of the affected indigenous community has been obtained.' } } 
+                    ] 
+                }},
+                gencoNewPostTC: { title: 'GenCo/MGSP - New (Post T&C)', items: { 
+                    'General': [ 
+                        { text: 'Updated Application Form (COC Form No. 1)', ref: { section: 'Section 9.2 (a) (i)', page: '26', purpose: 'To provide the final, updated application details after the completion of Test & Commissioning.' } }, 
+                        { text: 'Latest Company Profile (COC Form No. 2)', ref: { section: 'Section 9.2 (a) (ii)', page: '26', purpose: 'To ensure the ERC has the most current company information.' } }, 
+                        { text: 'Updated General Plant Description (COC Form No. 4)', ref: { section: 'Section 9.2 (a) (iii)', page: '26', purpose: 'To submit the final technical description and actual photos of the commissioned plant.' } } 
+                    ], 
+                    'Technical': [ 
+                        { text: 'Final Certificate of Approval to Connect (FCATC)', ref: { section: 'Section 9.2 (b) (i) (1)', page: '27', purpose: 'To certify that the facility has passed all tests and is safely and reliably connected to the grid or distribution system.' } }, 
+                        { text: 'Generating Unit Capability Test (GUCT) Results', ref: { section: 'Section 9.2 (b) (i) (2)', page: '27', purpose: 'To officially document the proven operational capabilities (e.g., Pmax, Pmin) of the generating unit.' } }, 
+                        { text: 'WESM Registration (if applicable)', ref: { section: 'Section 9.2 (b) (i) (3)', page: '27', purpose: 'To confirm the facility is registered as a participant in the Wholesale Electricity Spot Market.' } }, 
+                        { text: 'Ancillary Service (AS) Capability Test Results (if applicable)', ref: { section: 'Section 9.2 (b) (i) (4)', page: '27', purpose: 'To certify the facility\'s capability to provide essential grid support services.' } }, 
+                        { text: 'ERC Approved Authority for Dedicated Point-to-Point facilities (if applicable)', ref: { section: 'Section 9.2 (b) (ii)', page: '27', purpose: 'To submit the final ERC approval for any dedicated connection facilities.' } } 
+                    ], 
+                    'Financial': [ 
+                        { text: 'ERC approved BSUP and proof of compliance (if applicable)', ref: { section: 'Section 9.2 (c)', page: '27', purpose: 'To demonstrate full compliance with business separation rules as approved by the ERC.' } } 
+                    ], 
+                    'Ownership/Control': [ 
+                        { text: 'Business Permit (Generation Facility location)', ref: { section: 'Section 9.2 (d)', page: '27', purpose: 'To provide the final, issued permit to operate legally at the facility\'s location.' } } 
+                    ], 
+                    'Other': [ 
+                        { text: 'DOE: MOA on establishment of Trust Accounts (ER 1-94)', ref: { section: 'Section 9.2 (e) (i)', page: '28', purpose: 'To provide the executed agreement that ensures financial benefits are directed to host communities.' } }, 
+                        { text: 'DENR: Permit to Operate (PTO)', ref: { section: 'Section 9.2 (e) (ii)', page: '28', purpose: 'To provide the final permit for operating equipment that may be sources of pollution.' } }, 
+                        { text: 'DENR: Wastewater Discharge Permit (WDP)/Discharge Permit (DP)', ref: { section: 'Section 9.2 (e) (iii)', page: '28', purpose: 'To provide the final permit for legally discharging wastewater.' } }, 
+                        { text: 'NWRB: Water Permit (WP)', ref: { section: 'Section 9.2 (e) (iv)', page: '28', purpose: 'To provide the final, unconditional permit for the use of water resources.' } } 
+                    ] 
+                }},
+                pao: { title: 'Provisional Authority to Operate (PAO)', items: { 
+                    'Core Requirements': [ 
+                        { text: 'Submission of all available COC requirements.', ref: { section: 'Section 10', page: '30', purpose: 'To demonstrate good faith by submitting all completed requirements for a full COC.' } }, 
+                        { text: 'Verified written explanation for any missing requirements.', ref: { section: 'Section 10', page: '30', purpose: 'To formally explain to the ERC why certain requirements are not yet complete, allowing for the consideration of substitute documents.' } } 
+                    ], 
+                    'Substitute Documents (Submit one for each missing item)': [ 
+                        { text: 'Compliance Plan for FCATC', ref: { section: 'Section 10 (a)', page: '32', purpose: 'To serve as a temporary substitute for the final FCATC, showing a concrete plan to secure it.' } }, 
+                        { text: 'Compliance Plan for GUCT', ref: { section: 'Section 10 (b)', page: '32', purpose: 'To serve as a temporary substitute for the final GUCT results, showing a plan to conduct the tests.' } }, 
+                        { text: 'Application for renewal of AS Capability', ref: { section: 'Section 10 (c)', page: '32', purpose: 'To demonstrate due diligence in maintaining AS certification while the renewal is in process.' } }, 
+                        { text: 'Initial WESM Registration', ref: { section: 'Section 10 (d)', page: '32', purpose: 'To show that the process of WESM registration has been initiated.' } }, 
+                        { text: 'Application for dedicated point-to-point facility', ref: { section: 'Section 10 (e)', page: '32', purpose: 'To show that the application for a dedicated line is already filed with the ERC.' } }, 
+                        { text: 'Program to Comply (PTC) for financial standards', ref: { section: 'Section 10 (f)', page: '32', purpose: 'To provide a formal plan outlining the steps the applicant will take to meet the ERC\'s financial standards.' } }, 
+                        { text: 'BSUP application filed with ERC', ref: { section: 'Section 10 (g)', page: '32', purpose: 'To show that the required Business Separation and Unbundling Plan has been formally submitted to the ERC for review.' } }, 
+                        { text: 'Affidavit of Undertaking (AOU) for Public Offering Requirement', ref: { section: 'Section 10 (h)', page: '32', purpose: 'To legally commit to fulfilling the Public Offering Requirement within a specified timeframe.' } }, 
+                        { text: 'Proof of application for Business Permit renewal', ref: { section: 'Section 10 (i)', page: '33', purpose: 'To demonstrate that the applicant is actively seeking to renew an expired business permit.' } }, 
+                        { text: 'Proof of Establishment of a Trust Account (ER 1-94)', ref: { section: 'Section 10 (j)', page: '33', purpose: 'To provide evidence (e.g., bank certification) that funds for host communities are secured, even if the formal MOA is not yet signed.' } }, 
+                        { text: 'Proof of application for amended COE-PDP/MEDP', ref: { section: 'Section 10 (k)', page: '33', purpose: 'To show that the applicant is correcting discrepancies with the DOE\'s power development plan.' } }, 
+                        { text: 'Proof of application for amended ECC', ref: { section: 'Section 10 (l)', page: '33', purpose: 'To show that the applicant is correcting discrepancies on their Environmental Compliance Certificate.' } }, 
+                        { text: 'Proof of application for renewed/amended PTO', ref: { section: 'Section 10 (m)', page: '33', purpose: 'To show that an expired or incorrect Permit to Operate is being renewed or amended.' } }, 
+                        { text: 'Proof of application for renewed/amended WDP/DP', ref: { section: 'Section 10 (n)', page: '33', purpose: 'To show that an expired or incorrect Wastewater Discharge Permit is being renewed or amended.' } }, 
+                        { text: 'Conditional WP or proof of application for amended WP', ref: { section: 'Section 10 (o)', page: '33', purpose: 'To show that the applicant has a conditional right to use water or is in the process of amending their existing Water Permit.' } } 
+                    ] 
+                }}
+            },
+            'Special Facilities (SGF, QE, DER)': {
+                sgfBelow1MW: { title: 'SGF (< 1 MW)', items: { 'Requirements': [ { text: 'SGF-COC Application Form No. 1', ref: { section: 'Section 9.3 (a) (i)', page: '28', purpose: 'To formally apply for a COC for a small Self-Generating Facility using the correct form.' } }, { text: 'DU Acknowledgement of SGF', ref: { section: 'Section 9.3 (a) (ii)', page: '28', purpose: 'To ensure the local Distribution Utility is aware of the generating facility connected within its distribution network.' } }, { text: 'Permit to Operate (PTO) from DENR/BARMM-MENRE', ref: { section: 'Section 9.3 (a) (iii)', page: '28', purpose: 'To ensure the small generating unit complies with environmental regulations for air quality.' } } ] }},
+                sgf1MWAndAbove: { title: 'SGF (>= 1 MW)', items: { 'Requirements': [ { text: 'SGF-COC Application Form No. 1', ref: { section: 'Section 9.3 (b) (i)', page: '29', purpose: 'To formally apply for a COC for a large Self-Generating Facility.' } }, { text: 'DU Acknowledgement of SGF', ref: { section: 'Section 9.3 (b) (ii)', page: '29', purpose: 'To ensure the local Distribution Utility is aware of the generating facility.' } }, { text: 'SEC COR / Business Name Registration', ref: { section: 'Section 9.3 (b) (iii)', page: '29', purpose: 'To verify the legal identity of the entity owning the SGF.' } }, { text: 'Latest General Information Sheet (GIS)', ref: { section: 'Section 9.3 (b) (iv)', page: '29', purpose: 'To identify the current ownership and management of the entity.' } }, { text: 'Environmental Compliance Certificate (ECC)', ref: { section: 'Section 9.3 (b) (v)', page: '29', purpose: 'To ensure the larger facility complies with national environmental impact standards.' } }, { text: 'Permit to Operate (PTO)', ref: { section: 'Section 9.3 (b) (vi)', page: '29', purpose: 'To ensure the generating unit complies with air quality regulations.' } } ] }},
+                qe: { title: 'Qualified End-User (QE)', items: { 'Requirements (Submitted by DU)': [ { text: 'QE-COC Application Form No. 1', ref: { section: 'Section 9.4 (a)', page: '29', purpose: 'To formally apply for a COC under the Net-Metering Program.' } }, { text: 'Net-Metering Agreement (NMA) with the DU', ref: { section: 'Section 9.4 (b)', page: '29', purpose: 'To provide the legal contract governing the connection and billing arrangement with the Distribution Utility.' } }, { text: 'Payment of fees (Cashier\'s/Manager\'s Check)', ref: { section: 'Section 9.4', page: '29', purpose: 'To cover the administrative costs of processing the COC application.' } } ] }},
+                derExporting: { title: 'DER (Exporting)', items: { 'Requirements': [ { text: 'DER COC Application Form No. 1', ref: { section: 'Section 9.5 (a) (i)', page: '30', purpose: 'To formally apply for a COC for a Distributed Energy Resource that exports power.' } }, { text: 'Renewable DER Supply Agreement with DU', ref: { section: 'Section 9.5 (a) (ii)', page: '30', purpose: 'To provide the contract governing the sale of exported energy to the Distribution Utility.' } }, { text: 'Permit to Operate (PTO)', ref: { section: 'Section 9.5 (a) (iii)', page: '30', purpose: 'To ensure the generating unit complies with air quality regulations.' } }, { text: 'Management/lease contracts (if applicable)', ref: { section: 'Section 9.5 (a) (iv)', page: '30', purpose: 'To clarify operational responsibilities if the DER is managed by a third party.' } } ] }},
+                derNonExporting: { title: 'DER (Non-Exporting)', items: { 'Requirements': [ { text: 'DER - COC Application Form No. 1', ref: { section: 'Section 9.5 (b) (i)', page: '30', purpose: 'To formally apply for a COC for a Distributed Energy Resource that does not export power.' } }, { text: 'DER - COC Application Form No. 2', ref: { section: 'Section 9.5 (b) (ii)', page: '30', purpose: 'To provide additional required information specific to non-exporting DERs.' } }, { text: 'DU certification of technical compliance (PDC/PSGG)', ref: { section: 'Section 9.5 (b) (iii)', page: '30', purpose: 'To confirm from the DU that the facility is technically compliant and can be safely integrated into the distribution system.' } }, { text: 'Environmental Compliance Certificate (ECC)', ref: { section: 'Section 9.5 (b) (iv)', page: '30', purpose: 'To ensure the facility complies with national environmental impact standards.' } }, { text: 'Permit to Operate (PTO)', ref: { section: 'Section 9.5 (b) (v)', page: '30', purpose: 'To ensure the generating unit complies with air quality regulations.' } } ] }}
+            },
+            'Amendments': {
+                amendTech: { title: 'Amendment (Tech Specs)', items: { 'General': [ { text: 'Application Form (COC Form No. 1)', ref: { section: 'Section 12.1 (a) (i)', page: '35', purpose: 'To formally apply for an amendment to an existing COC due to technical changes.' } }, { text: 'Updated General Plant Description (COC Form No. 4)', ref: { section: 'Section 12.1 (a) (ii)', page: '35', purpose: 'To provide the ERC with the updated technical specifications of the plant.' } } ], 'Technical': [ { text: 'Updated Electrical/Mechanical Plans', ref: { section: 'Section 12.1 (b) (i) (1)', page: '35', purpose: 'To submit the revised technical plans that reflect the changes made.' } }, { text: 'Amended FCATC', ref: { section: 'Section 12.1 (b) (i) (2)', page: '35', purpose: 'To provide an updated certificate from the grid operator that approves the new connection parameters.' } }, { text: 'New GUCT Results (if Pmax/Pmin change)', ref: { section: 'Section 12.1 (b) (ii)', page: '35', purpose: 'To validate the new operational capabilities of the plant after the technical changes.' } }, { text: 'Amended WESM Registration', ref: { section: 'Section 12.1 (b) (iii)', page: '36', purpose: 'To ensure the market operator has the correct, updated technical data of the facility.' } } ], 'Other': [ { text: 'DOE: Amended Certificate of Endorsement (COE)', ref: { section: 'Section 12.1 (c) (i)', page: '36', purpose: 'To confirm that the technical changes are still consistent with the national power development plan.' } }, { text: 'DOE: Letter of Confirmation for Decommissioning/Mothballing (if applicable)', ref: { section: 'Section 12.1 (c) (ii)', page: '36', purpose: 'To provide official confirmation from the DOE if the amendment involves taking a unit out of service.' } }, { text: 'DENR: Amended ECC (if capacity increases)', ref: { section: 'Section 12.1 (c) (i)', page: '36', purpose: 'To ensure any increase in capacity has undergone the necessary environmental impact assessment.' } }, { text: 'DENR: Amended PTO', ref: { section: 'Section 12.1 (c) (ii)', page: '36', purpose: 'To ensure the permit to operate pollution sources is updated to reflect the technical changes.' } } ] }},
+                amendOwnership: { title: 'Amendment (Ownership)', items: { 'General': [ { text: 'Application Form (COC Form No. 1)', ref: { section: 'Section 12.4 (a) (i)', page: '38', purpose: 'To formally initiate the process of transferring the COC to the new owner.' } }, { text: 'Company Profile (COC Form No. 2) of new owner', ref: { section: 'Section 12.4 (a) (ii)', page: '38', purpose: 'To provide the ERC with the corporate details of the new owning entity.' } }, { text: 'Affidavit of Compliance (COC Form No. 3) by new owner', ref: { section: 'Section 12.4 (a) (iii)', page: '38', purpose: 'For the new owner to legally affirm their commitment to comply with all relevant rules.' } } ], 'Technical': [ { text: 'Amended FCATC in new owner\'s name', ref: { section: 'Section 12.4 (b) (i) (1)', page: '38', purpose: 'To formally transfer the connection agreement and responsibilities to the new owner.' } }, { text: 'Amended WESM Registration', ref: { section: 'Section 12.4 (b) (i) (2)', page: '39', purpose: 'To update the market operator records with the new ownership information.' } }, { text: 'Amended AS Capability Certificate', ref: { section: 'Section 12.4 (b) (i) (3)', page: '39', purpose: 'To formally transfer the ancillary services certification to the new owner.' } } ], 'Financial': [ { text: 'New owner\'s AFS (2 most recent years)', ref: { section: 'Section 12.4 (c) (i)', page: '39', purpose: 'To allow the ERC to assess the financial viability of the new owner.' } }, { text: 'New owner\'s Schedule of liabilities', ref: { section: 'Section 12.4 (c) (ii)', page: '39', purpose: 'To provide a clear picture of the new owner\'s financial obligations.' } }, { text: 'New owner\'s 5-year financial plan', ref: { section: 'Section 12.4 (c) (iii)', page: '39', purpose: 'To demonstrate the new owner\'s long-term financial plan for the facility.' } }, { text: 'ERC approved BSUP for new owner (if applicable)', ref: { section: 'Section 12.4 (c) (iv)', page: '39', purpose: 'To ensure the new owner complies with business separation rules if they have other business segments.' } } ], 'Ownership/Control': [ { text: 'New owner\'s SEC COR / Business Name Registration', ref: { section: 'Section 12.4 (d) (i)', page: '40', purpose: 'To verify the legal identity and corporate structure of the new owner.' } }, { text: 'New owner\'s Business Permit (Principal Office)', ref: { section: 'Section 12.4 (d) (ii)', page: '40', purpose: 'To confirm the new owner is legally permitted to conduct business.' } }, { text: 'New owner\'s Business Permit (Facility Location)', ref: { section: 'Section 12.4 (d) (iii)', page: '40', purpose: 'To provide the valid permit for the new owner to operate at the facility\'s location.' } }, { text: 'New owner\'s latest GIS', ref: { section: 'Section 12.4 (d) (iv)', page: '40', purpose: 'To identify the current officers, directors, and stockholders of the new owner.' } } ], 'Other': [ { text: 'MOA on Trust Accounts or Deed of Assignment', ref: { section: 'Section 12.4 (e) (i)', page: '40', purpose: 'To ensure the obligations to host communities are legally transferred to the new owner.' } }, { text: 'Amended ECC in new owner\'s name', ref: { section: 'Section 12.4 (e) (ii)', page: '41', purpose: 'To formally transfer the environmental responsibilities and compliance certificate to the new owner.' } }, { text: 'Amended PTO in new owner\'s name', ref: { section: 'Section 12.4 (e) (iii)', page: '41', purpose: 'To formally transfer the permit to operate pollution sources to the new owner.' } }, { text: 'Amended WDP/DP in new owner\'s name', ref: { section: 'Section 12.4 (e) (iv)', page: '41', purpose: 'To formally transfer the wastewater discharge permit to the new owner.' } }, { text: 'Amended WP in new owner\'s name', ref: { section: 'Section 12.4 (e) (v)', page: '41', purpose: 'To formally transfer the water rights and permit to the new owner.' } }, { text: 'New owner\'s Fuel Supply Agreements', ref: { section: 'Section 12.4 (e) (vi)', page: '41', purpose: 'To demonstrate that the new owner has secured a stable fuel supply for the facility.' } } ] }}
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const cocTypeSelector = document.getElementById('cocTypeSelector');
+        const checklistDiv = document.getElementById('checklist');
+        const checklistTitle = document.getElementById('checklistTitle');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const printButton = document.getElementById('printButton');
+        const resetButton = document.getElementById('resetButton');
+        const infoModal = document.getElementById('infoModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const closeModalButtonX = document.getElementById('closeModalButtonX');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const searchBar = document.getElementById('searchBar');
+        const exportPdfButton = document.getElementById('exportPdfButton');
+        const exportCsvButton = document.getElementById('exportCsvButton');
+        const targetDateInput = document.getElementById('targetDate');
+        const deadlineInfo = document.getElementById('deadlineInfo');
+
+        let currentChecklistId = 'gencoNewPreFiling';
+
+        function renderSelector() {
+            cocTypeSelector.innerHTML = '';
+            for (const groupName in checklists) {
+                const groupHeader = document.createElement('h3');
+                groupHeader.className = 'w-full text-sm uppercase text-zinc-500 font-bold mt-4 mb-2 px-1 tracking-wider';
+                groupHeader.textContent = groupName;
+                cocTypeSelector.appendChild(groupHeader);
+
+                const buttonGrid = document.createElement('div');
+                buttonGrid.className = 'grid grid-cols-2 md:grid-cols-3 gap-2';
+                cocTypeSelector.appendChild(buttonGrid);
+
+                const groupItems = checklists[groupName];
+                for (const key in groupItems) {
+                    const bubble = document.createElement('button');
+                    bubble.className = `text-sm font-medium p-3 text-center rounded-xl transition border-2`;
+                    bubble.textContent = groupItems[key].title;
+                    bubble.dataset.type = key;
+                    buttonGrid.appendChild(bubble);
+                }
+            }
+        }
+
+        function findChecklistData(type) {
+            for (const group in checklists) {
+                if (checklists[group][type]) {
+                    return checklists[group][type];
+                }
+            }
+            return null;
+        }
+
+        function renderChecklist(type, searchTerm = '') {
+            currentChecklistId = type;
+            const data = findChecklistData(type);
+            if (!data) return;
+
+            checklistTitle.textContent = data.title;
+            checklistDiv.innerHTML = '';
+            
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+            for (const category in data.items) {
+                const filteredItems = data.items[category].filter(item => 
+                    item.text.toLowerCase().includes(lowerCaseSearchTerm)
+                );
+
+                if (filteredItems.length === 0) continue;
+
+                const categoryHeader = document.createElement('h3');
+                categoryHeader.className = 'text-base font-semibold text-zinc-600 mt-6 mb-3 uppercase tracking-wider border-b border-zinc-200 pb-2';
+                categoryHeader.textContent = category;
+                checklistDiv.appendChild(categoryHeader);
+
+                const itemList = document.createElement('div');
+                itemList.className = 'mt-2 space-y-1';
+                checklistDiv.appendChild(itemList);
+
+                filteredItems.forEach((item, index) => {
+                    const originalIndex = data.items[category].indexOf(item);
+                    const itemId = `${type}-${category}-${originalIndex}`;
+                    
+                    const container = document.createElement('div');
+                    container.className = 'flex items-center justify-between p-3 rounded-lg transition hover:bg-zinc-50';
+
+                    const label = document.createElement('label');
+                    label.htmlFor = itemId;
+                    label.className = 'custom-checkbox flex items-center cursor-pointer mr-2';
+
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.id = itemId;
+                    input.dataset.itemId = itemId;
+
+                    const checkmark = document.createElement('span');
+                    checkmark.className = 'checkmark mr-4 flex-shrink-0';
+                    
+                    const text = document.createElement('span');
+                    text.textContent = item.text;
+                    text.className = 'item-text text-base text-zinc-700';
+                    
+                    label.appendChild(input);
+                    label.appendChild(checkmark);
+                    label.appendChild(text);
+
+                    const infoButton = document.createElement('button');
+                    infoButton.className = 'info-btn text-zinc-400 hover:text-indigo-600 transition flex-shrink-0';
+                    infoButton.dataset.ref = JSON.stringify(item.ref);
+                    infoButton.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+                    container.appendChild(label);
+                    container.appendChild(infoButton);
+                    itemList.appendChild(container);
+                });
+            }
+            loadState();
+            updateProgress();
+            updateSelector();
+        }
+        
+        function updateSelector() {
+            const bubbles = cocTypeSelector.querySelectorAll('button');
+            bubbles.forEach(bubble => {
+                if (bubble.dataset.type === currentChecklistId) {
+                    bubble.className = 'text-sm font-medium p-3 text-center rounded-xl transition border-2 bg-indigo-600 text-white border-indigo-600';
+                } else {
+                    bubble.className = 'text-sm font-medium p-3 text-center rounded-xl transition border-2 bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400';
+                }
+            });
+        }
+
+        function saveState() {
+            const checkboxes = checklistDiv.querySelectorAll('input[type="checkbox"]');
+            const state = {};
+            checkboxes.forEach(cb => { state[cb.dataset.itemId] = cb.checked; });
+            localStorage.setItem(`checklistState_${currentChecklistId}`, JSON.stringify(state));
+        }
+
+        function loadState() {
+            const state = JSON.parse(localStorage.getItem(`checklistState_${currentChecklistId}`)) || {};
+            for (const itemId in state) {
+                const checkbox = document.querySelector(`input[data-item-id="${itemId}"]`);
+                if (checkbox) {
+                    checkbox.checked = state[itemId];
+                    updateCheckboxStyle(checkbox);
+                }
+            }
+        }
+        
+        function updateCheckboxStyle(checkbox) {
+            const container = checkbox.closest('.custom-checkbox');
+            if (checkbox.checked) {
+                container.classList.add('checked');
+            } else {
+                container.classList.remove('checked');
+            }
+        }
+
+        function updateProgress() {
+            const checkboxes = checklistDiv.querySelectorAll('input[type="checkbox"]');
+            const total = checkboxes.length;
+            if (total === 0) {
+                progressBar.style.width = '0%';
+                progressText.textContent = 'N/A';
+                return;
+            }
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const percentage = Math.round((checkedCount / total) * 100);
+            
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `${percentage}%`;
+        }
+        
+        function resetChecklist() {
+            if (confirm('Are you sure you want to reset this checklist? All progress will be lost.')) {
+                localStorage.removeItem(`checklistState_${currentChecklistId}`);
+                renderChecklist(currentChecklistId);
+            }
+        }
+
+        function printChecklist() {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html><head><title>Print Checklist</title><style>
+                body { font-family: sans-serif; margin: 20px; } h1 { font-size: 24px; border-bottom: 2px solid #333; padding-bottom: 10px; } h3 { font-size: 16px; margin-top: 20px; text-transform: uppercase; color: #555; } div { margin-bottom: 8px; } label { display: block; } input { margin-right: 10px; } .checked span { text-decoration: line-through; color: #888; }
+                </style></head><body><h1>${checklistTitle.textContent}</h1><div id="print-content"></div></body></html>`);
+            
+            const printContent = printWindow.document.getElementById('print-content');
+            printContent.innerHTML = checklistDiv.innerHTML;
+            printContent.querySelectorAll('.info-btn').forEach(btn => btn.remove());
+
+            const originalCheckboxes = checklistDiv.querySelectorAll('input[type="checkbox"]');
+            const printCheckboxes = printContent.querySelectorAll('input[type="checkbox"]');
+            
+            originalCheckboxes.forEach((cb, index) => {
+                if (printCheckboxes[index]) {
+                    printCheckboxes[index].checked = cb.checked;
+                    if(cb.checked) {
+                        printCheckboxes[index].closest('label').classList.add('checked');
+                    }
+                }
+            });
+
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+        }
+
+        function showModal(refData) {
+            const ref = JSON.parse(refData);
+            let contentHTML = `
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-semibold text-zinc-800">Purpose:</p>
+                        <p>${ref.purpose}</p>
+                    </div>`;
+            
+            if (ref.definition) {
+                contentHTML += `
+                    <div>
+                        <p class="font-semibold text-zinc-800">Definition:</p>
+                        <p>${ref.definition}</p>
+                    </div>`;
+            }
+
+            contentHTML += `
+                    <div>
+                        <p class="font-semibold text-zinc-800">Reference:</p>
+                        <p>${ref.section}, Page ${ref.page} of the 2023 Revised COC Rules</p>
+                    </div>
+                </div>`;
+            
+            modalContent.innerHTML = contentHTML;
+            infoModal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            infoModal.classList.add('hidden');
+        }
+
+        function exportToCsv() {
+            const data = findChecklistData(currentChecklistId);
+            if (!data) return;
+
+            let csvContent = "data:text/csv;charset=utf-8,Category,Requirement,Status\n";
+            const state = JSON.parse(localStorage.getItem(`checklistState_${currentChecklistId}`)) || {};
+
+            for (const category in data.items) {
+                data.items[category].forEach((item, index) => {
+                    const itemId = `${currentChecklistId}-${category}-${index}`;
+                    const status = state[itemId] ? "Completed" : "Pending";
+                    csvContent += `"${category}","${item.text}","${status}"\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${data.title.replace(/ /g,"_")}_checklist.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportToPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const data = findChecklistData(currentChecklistId);
+            if (!data) return;
+
+            const state = JSON.parse(localStorage.getItem(`checklistState_${currentChecklistId}`)) || {};
+            let y = 15;
+
+            doc.setFontSize(18);
+            doc.text(data.title, 14, y);
+            y += 10;
+
+            for (const category in data.items) {
+                doc.setFontSize(14);
+                doc.text(category, 14, y);
+                y += 8;
+                doc.setFontSize(10);
+
+                data.items[category].forEach((item, index) => {
+                    if (y > 280) { // Page break
+                        doc.addPage();
+                        y = 15;
+                    }
+                    const itemId = `${currentChecklistId}-${category}-${index}`;
+                    const status = state[itemId] ? "[X]" : "[ ]";
+                    const itemText = `${status} ${item.text}`;
+                    
+                    const splitText = doc.splitTextToSize(itemText, 180);
+                    doc.text(splitText, 14, y);
+                    y += (splitText.length * 5);
+                });
+                 y += 5;
+            }
+
+            doc.save(`${data.title.replace(/ /g,"_")}_checklist.pdf`);
+        }
+        
+        function calculateDeadlines() {
+            const targetDateStr = targetDateInput.value;
+            if (!targetDateStr) {
+                deadlineInfo.innerHTML = '';
+                return;
+            }
+
+            const targetDate = new Date(targetDateStr);
+            const preFilingDate = new Date(targetDate);
+            preFilingDate.setDate(targetDate.getDate() - 30);
+
+            deadlineInfo.innerHTML = `
+                <p><strong>Pre-Filing Deadline:</strong> ${preFilingDate.toDateString()}</p>
+                <p class="text-xs mt-1">Submit pre-filing requirements at least 30 days before your target application date.</p>
+            `;
+        }
+
+        // --- EVENT LISTENERS ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                    btn.classList.add('text-zinc-600');
+                });
+                button.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                button.classList.remove('text-zinc-600');
+
+                tabContents.forEach(content => {
+                    if (content.id === `${tab}-content`) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                button.classList.toggle('open');
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                } 
+            });
+        });
+
+        cocTypeSelector.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                renderChecklist(button.dataset.type, searchBar.value);
+            }
+        });
+
+        checklistDiv.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                updateCheckboxStyle(e.target);
+                saveState();
+                updateProgress();
+            }
+        });
+
+        checklistDiv.addEventListener('click', (e) => {
+            const infoButton = e.target.closest('.info-btn');
+            if (infoButton) {
+                showModal(infoButton.dataset.ref);
+            }
+        });
+        
+        searchBar.addEventListener('input', (e) => {
+            renderChecklist(currentChecklistId, e.target.value);
+        });
+        
+        printButton.addEventListener('click', printChecklist);
+        resetButton.addEventListener('click', resetChecklist);
+        exportPdfButton.addEventListener('click', exportToPdf);
+        exportCsvButton.addEventListener('click', exportToCsv);
+        targetDateInput.addEventListener('change', calculateDeadlines);
+        closeModalButton.addEventListener('click', hideModal);
+        closeModalButtonX.addEventListener('click', hideModal);
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                hideModal();
+            }
+        });
+
+        // --- INITIALIZATION ---
+        renderSelector();
+        renderChecklist(currentChecklistId);
+    </script>
+</body>
+</html>
